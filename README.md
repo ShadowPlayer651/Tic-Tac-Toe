@@ -28,4 +28,4 @@ You may play it freely, but you may not copy, modify, distribute, or reuse the c
 See LICENSE.md for full details.
 
 🚀 Live Demo
-(Insert your GitHub Pages / Netlify link here once deployed)
+https://shadowplayer651.github.io/Tic-Tac-Toe/
