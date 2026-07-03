@@ -174,6 +174,54 @@
     z-index: 10006;
     pointer-events: none;
   }
+
+  /* ---- Mobile gear / settings drawer ---- */
+  .gear-btn{
+    display:none;
+    position:fixed; top:16px; right:16px; z-index:10011;
+    width:48px;height:48px;border-radius:50%;
+    align-items:center;justify-content:center;
+    background:var(--btn-bg); border:1px solid var(--btn-ghost-border);
+    box-shadow:var(--shadow); cursor:pointer; color:var(--text);
+    transition: transform .18s ease;
+  }
+  .gear-btn:active{ transform: scale(0.92) rotate(20deg); }
+  .gear-btn svg{ width:24px;height:24px; display:block; }
+
+  .drawer-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(2,6,23,0.55);
+    z-index:10008; opacity:0; transition:opacity .25s ease;
+  }
+  .drawer-backdrop.open{ opacity:1; }
+
+  html[data-device="mobile"] .app{
+    grid-template-columns: 1fr;
+  }
+  html[data-device="mobile"] .gear-btn{ display:flex; }
+  html[data-device="mobile"] .drawer-backdrop.open{ display:block; }
+
+  html[data-device="mobile"] .sidebar{
+    position:fixed; top:0; right:0; bottom:0;
+    width:min(86vw, 340px); height:100%;
+    margin:0; border-radius:0;
+    background:var(--card);
+    box-shadow:-14px 0 50px rgba(2,6,23,0.5);
+    transform:translateX(100%);
+    transition:transform .3s cubic-bezier(.2,.9,.2,1);
+    z-index:10009; overflow-y:auto;
+    padding-top:64px;
+  }
+  html[data-device="mobile"] .sidebar.open{ transform:translateX(0); }
+
+  .drawer-close{
+    display:none;
+    position:absolute; top:14px; right:14px;
+    width:36px;height:36px;border-radius:10px;
+    align-items:center;justify-content:center;
+    background:transparent;border:1px solid var(--btn-ghost-border);
+    color:var(--text); cursor:pointer; font-size:18px; line-height:1;
+  }
+  html[data-device="mobile"] .drawer-close{ display:flex; }
 </style>
 </head>
 <body>
@@ -204,6 +252,7 @@
     </div>
 
     <aside class="sidebar" id="rightPanel">
+      <button class="drawer-close" id="drawerCloseBtn" aria-label="Close settings">&times;</button>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-weight:800" id="playModeLabel">Play Mode</div>
@@ -249,6 +298,14 @@
     </aside>
   </div>
 </div>
+
+<button class="gear-btn" id="gearBtn" aria-label="Settings and game mode" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.6"/>
+    <path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19.5a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4.5a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H10.5a1.65 1.65 0 0 0 1-1.51V4.5a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10.5a1.65 1.65 0 0 0 1.51 1H19.5a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
 
 <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
   <div class="spinner" aria-hidden="true"></div>
@@ -752,9 +809,21 @@ window.addEventListener('keydown', (e)=>{
   if(e.key === 'r' || e.key === 'R') uiAction(resetBoard)();
 });
 
-// Simple Minimax AI
+// AI: minimax with a chance of a suboptimal move so it's beatable
+const AI_MISTAKE_CHANCE = 0.35; // probability the AI ignores the optimal move and plays randomly instead
+
 function aiMove(){
   if(state.gameOver) return;
+  const avail = state.board.map((v,i)=>v?null:i).filter(v=>v!==null);
+  if(avail.length === 0) return;
+
+  // Occasionally "miss" the perfect move and play a random legal move instead
+  if(Math.random() < AI_MISTAKE_CHANCE){
+    const idx = avail[Math.floor(Math.random()*avail.length)];
+    applyMove(idx);
+    return;
+  }
+
   const best = minimax(state.board.slice(), state.aiPlayer);
   if(best && best.index !== undefined){
     applyMove(best.index);
@@ -799,13 +868,72 @@ $('themeBtn').addEventListener('click', uiAction(toggleTheme));
 langBtn.addEventListener('click', uiAction(toggleLanguage));
 $('resetScores').addEventListener('click', uiAction(resetScores));
 
+// ---- Desktop vs Mobile detection ----
+// Combines viewport width with touch/pointer capability so tablets in
+// portrait and small touch screens count as "mobile", while a narrow
+// desktop browser window with a mouse still gets the full layout.
+const mobileWidthQuery = window.matchMedia('(max-width: 820px)');
+const coarsePointerQuery = window.matchMedia('(pointer: coarse)');
+
+function computeIsMobile(){
+  const narrow = mobileWidthQuery.matches;
+  const touch = coarsePointerQuery.matches || navigator.maxTouchPoints > 0;
+  return narrow && touch || narrow && innerWidth <= 600;
+}
+
+function applyDeviceMode(){
+  const isMobile = computeIsMobile();
+  document.documentElement.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
+  if(!isMobile) closeSettingsDrawer(true);
+}
+
+const gearBtn = $('gearBtn');
+const drawerBackdrop = $('drawerBackdrop');
+const rightPanel = $('rightPanel');
+const drawerCloseBtn = $('drawerCloseBtn');
+
+function openSettingsDrawer(){
+  rightPanel.classList.add('open');
+  drawerBackdrop.classList.add('open');
+  gearBtn.setAttribute('aria-expanded','true');
+  playSound('click');
+}
+function closeSettingsDrawer(silent){
+  rightPanel.classList.remove('open');
+  drawerBackdrop.classList.remove('open');
+  gearBtn.setAttribute('aria-expanded','false');
+  if(!silent) playSound('click');
+}
+function toggleSettingsDrawer(){
+  if(rightPanel.classList.contains('open')) closeSettingsDrawer();
+  else openSettingsDrawer();
+}
+
+gearBtn.addEventListener('click', toggleSettingsDrawer);
+drawerBackdrop.addEventListener('click', ()=> closeSettingsDrawer());
+drawerCloseBtn.addEventListener('click', ()=> closeSettingsDrawer());
+window.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && rightPanel.classList.contains('open')) closeSettingsDrawer();
+});
+
+// Re-check on resize / orientation change / pointer type change
+window.addEventListener('resize', applyDeviceMode);
+if(mobileWidthQuery.addEventListener) mobileWidthQuery.addEventListener('change', applyDeviceMode);
+if(coarsePointerQuery.addEventListener) coarsePointerQuery.addEventListener('change', applyDeviceMode);
+
+// Close the drawer automatically once a mode is picked or the board is restarted on mobile
+const _setPvP = setPvP, _setPvAI = setPvAI;
+setPvP = function(){ _setPvP(); if(document.documentElement.getAttribute('data-device')==='mobile') closeSettingsDrawer(true); };
+setPvAI = function(){ _setPvAI(); if(document.documentElement.getAttribute('data-device')==='mobile') closeSettingsDrawer(true); };
+
 // Initialize visuals and texts
 (function init(){
   document.documentElement.setAttribute('data-theme', state.theme);
+  applyDeviceMode();
   applyLanguageTexts();
   render();
   if(boardEl.children[0]) boardEl.children[0].focus();
 })();
 </script>
 </body>
-</html>
+</html>2
