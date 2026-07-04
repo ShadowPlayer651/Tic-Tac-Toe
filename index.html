@@ -1,939 +1,272 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Tic Tac Toe</title>
+<meta charset="UTF-8">
+<title>Tic Tac Toe Online</title>
+
 <style>
-  :root{
-    --bg-top:#0f1720; --bg-bottom:#07101a; --card:#0b1220; --muted:#9aa6b2;
-    --accent:#7c5cff; --accent-2:#00d4ff;
-    --x:#ff6b6b; --o:#4ee1a0;
-    --glass: rgba(255,255,255,0.04); --glass-2: rgba(255,255,255,0.02);
-    --text:#e6eef6;
-    --btn-bg: linear-gradient(180deg,#0f2a3a,#08202a);
-    --btn-ghost-border: rgba(255,255,255,0.04);
-    --pill-bg: rgba(255,255,255,0.03);
-    --board-bg: linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
-    --cell-hover: rgba(255,255,255,0.02);
-    --shadow: 0 6px 30px rgba(2,6,23,0.6);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  }
+    body {
+        font-family: Arial, sans-serif;
+        background: #0d0d0d;
+        color: white;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
 
-  html[data-theme="light"]{
-    --bg-top:#f6f8fb; --bg-bottom:#e9eef6; --card:#ffffff; --muted:#5b6b78;
-    --accent:#6b5cff; --accent-2:#00a8d4;
-    --x:#c93b3b; --o:#137a4f;
-    --glass: rgba(2,6,23,0.03); --glass-2: rgba(2,6,23,0.01);
-    --text:#0b1720;
-    --btn-bg: linear-gradient(180deg,#e6eef6,#dfeaf3);
-    --btn-ghost-border: rgba(11,17,24,0.08);
-    --pill-bg: rgba(11,17,24,0.04);
-    --board-bg: linear-gradient(180deg,rgba(11,17,24,0.02),rgba(11,17,24,0.01));
-    --cell-hover: rgba(11,17,24,0.03);
-    --shadow: 0 6px 30px rgba(12,18,28,0.06);
-  }
+    .fade {
+        animation: fadeIn 0.5s ease forwards;
+        opacity: 0;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg-top),var(--bg-bottom));color:var(--text)}
-  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
-  .app{
-    width:100%;max-width:980px;background:var(--card);
-    border-radius:20px;padding:22px;box-shadow:var(--shadow);backdrop-filter: blur(6px);
-    display:grid;grid-template-columns: 1fr 360px;gap:18px;
-  }
+    #lobby {
+        text-align: center;
+        padding-top: 60px;
+        display: block;
+    }
 
-  .panel{
-    background:linear-gradient(180deg,var(--glass),var(--glass-2));
-    border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;
-  }
-  .title{display:flex;align-items:center;gap:12px}
-  .logo{
-    width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
-    display:flex;align-items:center;justify-content:center;font-weight:700;color:#041022;font-size:20px;box-shadow:0 6px 18px rgba(124,92,255,0.12);
-  }
-  h1{font-size:18px;margin:0}
-  p.lead{margin:0;color:var(--muted);font-size:13px}
+    #lobby h1 {
+        font-size: 50px;
+        margin-bottom: 20px;
+    }
 
-  .board-wrap{display:flex;gap:18px;align-items:center}
-  .board{
-    width:420px;height:420px;background:var(--board-bg);
-    border-radius:12px;padding:18px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:12px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    user-select:none; transition: transform 220ms ease, filter 220ms ease;
-  }
-  .cell{
-    background:transparent;border-radius:10px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;position:relative;transition:transform .12s ease, background .12s;
-    outline: none;
-  }
-  .cell:hover{transform:translateY(-4px);background:var(--cell-hover)}
-  .mark{
-    font-weight:900;font-size:72px;line-height:1;display:flex;align-items:center;justify-content:center;transition:transform .18s cubic-bezier(.2,.9,.2,1), opacity .18s;
-    opacity:1 !important; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    text-rendering: optimizeLegibility; pointer-events:none;
-  }
-  .mark.x{ color: var(--x); text-shadow: 0 6px 18px rgba(0,0,0,0.12); -webkit-text-stroke: 0.35px rgba(0,0,0,0.06); }
-  .mark.o{ color: var(--o); text-shadow: 0 6px 18px rgba(0,0,0,0.10); -webkit-text-stroke: 0.35px rgba(0,0,0,0.06); }
+    #lobby button {
+        padding: 15px 30px;
+        font-size: 20px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 10px;
+        transition: 0.2s;
+    }
 
-  .cell.dim{opacity:.98;transform:scale(1)}
-  .highlight{animation:pop .45s ease forwards}
-  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+    #playLocalBtn { background: #444; color: white; }
+    #playOnlineBtn { background: #0a84ff; color: white; }
+    #settingsBtn { background: #00cc44; color: white; }
 
-  .mark.new {
-    transform: scale(0.2);
-    opacity: 0;
-    animation: placePop 260ms cubic-bezier(.2,.9,.2,1) forwards;
-  }
-  @keyframes placePop {
-    0% { transform: scale(0.2); opacity: 0; }
-    60% { transform: scale(1.12); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
+    #lobby button:hover {
+        transform: scale(1.05);
+    }
 
-  .sidebar{display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)}
-  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:12px;border-radius:12px}
-  .controls{display:flex;gap:8px;flex-wrap:wrap}
-  button.btn{
-    background:var(--btn-bg);border:0;color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;
-    box-shadow:0 6px 18px rgba(2,6,23,0.08);
-  }
-  button.ghost{background:transparent;border:1px solid var(--btn-ghost-border)}
-  .mode{display:flex;gap:8px;align-items:center}
-  .stat{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:6px 0}
-  .score{display:flex;gap:8px;align-items:center}
-  .pill{background:var(--pill-bg);padding:6px 10px;border-radius:999px;font-weight:700;color:var(--text)}
+    #playerNameInput {
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+        width: 200px;
+        margin-top: 20px;
+    }
 
-  .footer{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;padding-top:6px}
+    #gameScreen {
+        display: none;
+        text-align: center;
+        padding-top: 20px;
+    }
 
-  /* Loading overlay for language switch */
-  .loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(2,6,23,0.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 10020;
-    color: #fff;
-    font-weight:800;
-    font-size:18px;
-    flex-direction: column;
-  }
-  .loading-overlay.show { display:flex; }
-  .spinner {
-    width:64px;height:64px;border-radius:50%;border:6px solid rgba(255,255,255,0.12);border-top-color:var(--accent);animation:spin 900ms linear infinite;margin-bottom:12px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+    #board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 5px;
+        justify-content: center;
+        margin-top: 30px;
+    }
 
-  @media (max-width:980px){
-    .app{grid-template-columns:1fr;max-width:720px}
-    .board{width:320px;height:320px}
-  }
-  @media (max-width:420px){
-    .board{width:260px;height:260px}
-    .mark{font-size:48px}
-  }
+    .cell {
+        width: 100px;
+        height: 100px;
+        background: #222;
+        font-size: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        border-radius: 10px;
+        transition: transform 0.2s, background 0.2s;
+    }
 
-  .loss-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(180, 20, 20, 0.0);
-    pointer-events: none;
-    z-index: 10005;
-    transition: background 220ms ease;
-  }
-  .loss-flash {
-    background: rgba(180, 20, 20, 0.28) !important;
-  }
-  @keyframes shake {
-    0% { transform: translateX(0) }
-    10% { transform: translateX(-8px) }
-    20% { transform: translateX(8px) }
-    30% { transform: translateX(-6px) }
-    40% { transform: translateX(6px) }
-    50% { transform: translateX(-4px) }
-    60% { transform: translateX(4px) }
-    70% { transform: translateX(-2px) }
-    80% { transform: translateX(2px) }
-    90% { transform: translateX(-1px) }
-    100% { transform: translateX(0) }
-  }
-  .shake {
-    animation: shake 600ms cubic-bezier(.36,.07,.19,.97);
-  }
+    .cell:hover {
+        background: #333;
+        transform: scale(1.05);
+    }
 
-  .loss-particle {
-    position: absolute;
-    width: 8px;
-    height: 12px;
-    background: linear-gradient(180deg, #444, #222);
-    opacity: 0.95;
-    transform-origin: center;
-    border-radius: 2px;
-    z-index: 10006;
-    pointer-events: none;
-  }
+    .cell.win {
+        background: #00cc44 !important;
+        transform: scale(1.2);
+    }
 
-  /* ---- Mobile gear / settings drawer ---- */
-  .gear-btn{
-    display:none;
-    position:fixed; top:16px; right:16px; z-index:10011;
-    width:48px;height:48px;border-radius:50%;
-    align-items:center;justify-content:center;
-    background:var(--btn-bg); border:1px solid var(--btn-ghost-border);
-    box-shadow:var(--shadow); cursor:pointer; color:var(--text);
-    transition: transform .18s ease;
-  }
-  .gear-btn:active{ transform: scale(0.92) rotate(20deg); }
-  .gear-btn svg{ width:24px;height:24px; display:block; }
+    #status {
+        margin-top: 20px;
+        font-size: 24px;
+    }
 
-  .drawer-backdrop{
-    display:none; position:fixed; inset:0; background:rgba(2,6,23,0.55);
-    z-index:10008; opacity:0; transition:opacity .25s ease;
-  }
-  .drawer-backdrop.open{ opacity:1; }
+    #roomUI {
+        margin-top: 20px;
+    }
 
-  html[data-device="mobile"] .app{
-    grid-template-columns: 1fr;
-  }
-  html[data-device="mobile"] .gear-btn{ display:flex; }
-  html[data-device="mobile"] .drawer-backdrop.open{ display:block; }
+    #roomUI input {
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+        width: 150px;
+    }
 
-  html[data-device="mobile"] .sidebar{
-    position:fixed; top:0; right:0; bottom:0;
-    width:min(86vw, 340px); height:100%;
-    margin:0; border-radius:0;
-    background:var(--card);
-    box-shadow:-14px 0 50px rgba(2,6,23,0.5);
-    transform:translateX(100%);
-    transition:transform .3s cubic-bezier(.2,.9,.2,1);
-    z-index:10009; overflow-y:auto;
-    padding-top:64px;
-  }
-  html[data-device="mobile"] .sidebar.open{ transform:translateX(0); }
+    #roomUI button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 5px;
+        transition: 0.2s;
+    }
 
-  .drawer-close{
-    display:none;
-    position:absolute; top:14px; right:14px;
-    width:36px;height:36px;border-radius:10px;
-    align-items:center;justify-content:center;
-    background:transparent;border:1px solid var(--btn-ghost-border);
-    color:var(--text); cursor:pointer; font-size:18px; line-height:1;
-  }
-  html[data-device="mobile"] .drawer-close{ display:flex; }
+    #createRoomBtn,
+    #joinRoomBtn {
+        background: #0a84ff;
+        color: white;
+    }
+
+    #randomBtn {
+        background: #00cc44;
+        color: white;
+    }
+
+    #roomUI button:hover {
+        transform: scale(1.05);
+    }
+
+    #chatBox {
+        margin-top: 30px;
+    }
+
+    #messages {
+        width: 300px;
+        height: 200px;
+        background: #222;
+        margin: auto;
+        padding: 10px;
+        overflow-y: auto;
+        border-radius: 10px;
+        text-align: left;
+    }
+
+    #chatInput {
+        margin-top: 10px;
+        width: 200px;
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+    }
+
+    #sendBtn {
+        padding: 10px 20px;
+        margin-left: 10px;
+        border: none;
+        border-radius: 10px;
+        background: #0a84ff;
+        color: white;
+        cursor: pointer;
+    }
+
+    #settingsMenu {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #111;
+        padding: 20px;
+        border-radius: 15px;
+        width: 300px;
+        text-align: center;
+        animation: fadeIn 0.3s ease forwards;
+    }
+
+    #settingsMenu h2 {
+        margin-bottom: 20px;
+    }
+
+    #settingsMenu button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        background: #444;
+        color: white;
+        cursor: pointer;
+    }
+
+    #winAnimation {
+        display:none;
+        position:fixed;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background:rgba(0,0,0,0.8);
+        color:white;
+        font-size:60px;
+        justify-content:center;
+        align-items:center;
+        z-index:999;
+    }
 </style>
 </head>
+
 <body>
-<div class="wrap">
-  <div class="app" id="appRoot" role="application" aria-label="Tic Tac Toe modern">
-    <div class="panel" id="leftPanel">
-      <div class="title">
-        <div class="logo">TTT</div>
-        <div>
-          <h1 id="titleText">Tic Tac Toe</h1>
-          <p class="lead" id="leadText">Local play • AI opponent • Scoreboard</p>
-        </div>
-      </div>
 
-      <div class="board-wrap">
-        <div class="board" id="board" aria-label="Game board" role="grid"></div>
-      </div>
+<div id="lobby" class="fade">
+    <h1>Tic Tac Toe</h1>
+    <button id="playLocalBtn">Play Local</button>
+    <button id="playOnlineBtn">Play Online</button>
+    <button id="settingsBtn">Settings</button>
 
-      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:8px">
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="pill" id="turnPill"><span id="turnText">Turn:</span> <strong id="turnLabel">X</strong></div>
-          <div style="color:var(--muted);font-size:13px;margin-left:6px" id="status">Ready</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn" id="restartBtn">Restart</button>
-        </div>
-      </div>
+    <br>
+    <input id="playerNameInput" placeholder="Your name...">
+</div>
+
+<div id="settingsMenu">
+    <h2>Settings</h2>
+    <label>
+        <input type="checkbox" id="darkModeToggle">
+        Dark Mode
+    </label><br><br>
+
+    <label>
+        <input type="checkbox" id="animationsToggle" checked>
+        Animations
+    </label>
+
+    <button id="closeSettingsBtn">Close</button>
+</div>
+
+<div id="gameScreen" class="fade">
+
+    <div id="roomUI">
+        <input id="roomCodeInput" placeholder="Room code...">
+        <button id="createRoomBtn">Create Room</button>
+        <button id="joinRoomBtn">Join Room</button>
+        <button id="randomBtn">Random Match</button>
     </div>
 
-    <aside class="sidebar" id="rightPanel">
-      <button class="drawer-close" id="drawerCloseBtn" aria-label="Close settings">&times;</button>
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:800" id="playModeLabel">Play Mode</div>
-          <div class="mode">
-            <button class="btn" id="pvpBtn">1: Player vs Player</button>
-            <button class="btn" id="aiBtn">2: Player vs AI</button>
-          </div>
-        </div>
-        <div style="margin-top:8px;color:var(--muted);font-size:13px" id="tipText">Tip: press 1 or 2 to switch modes. Click a cell or use keyboard arrows + Enter.</div>
-      </div>
+    <div id="status">Local mode: click a cell to play.</div>
 
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:800" id="scoreboardLabel">Scoreboard</div>
-          <div class="score">
-            <div class="pill" id="xScore">X 0</div>
-            <div class="pill" id="oScore">O 0</div>
-            <div class="pill" id="drawScore">Draws 0</div>
-          </div>
-        </div>
-        <div style="margin-top:8px;color:var(--muted);font-size:13px" id="scoreNote">Scores persist in your browser.</div>
-      </div>
+    <div id="board"></div>
 
-      <div class="card">
-        <div style="font-weight:800" id="appearanceLabel">Appearance</div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn ghost" id="themeBtn">Switch to Light</button>
-          <button class="btn ghost" id="langBtn">Deutsch</button>
-          <button class="btn ghost" id="resetScores">Reset Scores</button>
-        </div>
-        <div style="margin-top:8px;color:var(--muted);font-size:12px" id="appearanceNote">Switch theme or language. Language switch shows a short loading screen.</div>
-      </div>
+    <div id="chatBox">
+        <div id="messages"></div>
+        <input id="chatInput" placeholder="Type message...">
+        <button id="sendBtn">Send</button>
+    </div>
 
-      <div class="card">
-        <div style="font-weight:800" id="aboutLabel">About</div>
-        <div style="color:var(--muted);font-size:13px;margin-top:8px" id="aboutText">Modern, lightweight, and accessible Tic Tac Toe.</div>
-      </div>
-
-      <div class="footer">
-        <div style="font-size:12px;color:var(--muted)" id="builtFor">Enjoy the game!</div>
-        <div style="font-size:12px;color:var(--muted)" id="version">v1.7</div>
-      </div>
-    </aside>
-  </div>
 </div>
 
-<button class="gear-btn" id="gearBtn" aria-label="Settings and game mode" aria-expanded="false">
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.6"/>
-    <path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19.5a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4.5a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H10.5a1.65 1.65 0 0 0 1-1.51V4.5a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10.5a1.65 1.65 0 0 0 1.51 1H19.5a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-</button>
-<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<div id="winAnimation"></div>
 
-<div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
-  <div class="spinner" aria-hidden="true"></div>
-  <div id="loadingText">Loading...</div>
-</div>
+<script src="game.js" type="module"></script>
 
-<div id="lossOverlay" class="loss-overlay" aria-hidden="true"></div>
-
-<script>
-/*
-  Fix: localized "Turn:" label now updates with language switch.
-  - turnText (label) is updated when language changes.
-  - turnLabel still shows X/O and is updated by render().
-  - Loading overlay shows localized text for the target language during the 2s switch.
-  - Language preference persists in localStorage.
-*/
-
-// Short DOM helpers
-const $ = id => document.getElementById(id);
-const boardEl = $('board');
-const turnText = $('turnText');
-const turnLabel = $('turnLabel');
-const status = $('status');
-const xScoreEl = $('xScore'), oScoreEl = $('oScore'), drawScoreEl = $('drawScore');
-const loadingOverlay = $('loadingOverlay');
-const loadingText = $('loadingText');
-const langBtn = $('langBtn');
-
-const LANG = {
-  en: {
-    title: 'Tic Tac Toe',
-    lead: 'Local play • AI opponent • Scoreboard',
-    playMode: 'Play Mode',
-    tip: 'Tip: press 1 or 2 to switch modes.',
-    scoreboard: 'Scoreboard',
-    scoreNote: 'Scores will be saved in your browser.',
-    appearance: 'Appearance',
-    appearanceNote: 'Switch theme or language.',
-    about: 'About',
-    aboutText: 'Modern, lightweight, and accessible Tic Tac Toe.',
-    builtFor: 'Enjoy the game!',
-    restart: 'Restart',
-    pvp: '1: Player vs Player',
-    ai: '2: Player vs AI',
-    switchToLight: 'Switch to Light',
-    switchToDark: 'Switch to Dark',
-    resetScores: 'Reset Scores',
-    langButton: 'Deutsch',
-    loading: 'Loading...',
-    turn: 'Turn:',
-    ready: 'Ready',
-    yourMove: 'Your move',
-    aiThinking: 'AI thinking...',
-    draw: 'Draw',
-    drawsLabel: 'Draws',
-    winsSuffix: 'wins!'
-  },
-  de: {
-    title: 'Tic Tac Toe',
-    lead: 'Lokales Spiel • KI-Gegner • Wertung',
-    playMode: 'Spielmodus',
-    tip: 'Tipp: Drücke 1 oder 2 zum Wechseln.',
-    scoreboard: 'Punktestand',
-    scoreNote: 'Punkte werden im Browser gespeichert.',
-    appearance: 'Erscheinungsbild',
-    appearanceNote: 'Wechsle Thema oder Sprache.',
-    about: 'Über',
-    aboutText: 'Modernes, leichtes und barrierefreies Tic Tac Toe.',
-    builtFor: 'Viel Spaß beim Spielen!',
-    restart: 'Neustart',
-    pvp: '1: Spieler gegen Spieler',
-    ai: '2: Spieler gegen KI',
-    switchToLight: 'Wechsel zu Hell',
-    switchToDark: 'Wechsel zu Dunkel',
-    resetScores: 'Punkte zurücksetzen',
-    langButton: 'English',
-    loading: 'Lädt...',
-    turn: 'Zug:',
-    ready: 'Bereit',
-    yourMove: 'Du bist dran',
-    aiThinking: 'KI denkt...',
-    draw: 'Unentschieden',
-    drawsLabel: 'Unentschieden',
-    winsSuffix: 'gewinnt!'
-  }
-};
-
-let state = {
-  board: Array(9).fill(null),
-  turn: 'X',
-  history: [],
-  mode: 'pvp',
-  scores: { X:0, O:0, D:0 },
-  gameOver: false,
-  aiPlayer: 'O',
-  lastResult: null,
-  lang: 'en',
-  theme: 'dark'
-};
-
-// Load persisted language and scores
-function loadState(){
-  try{
-    const s = JSON.parse(localStorage.getItem('ttt_scores')||'{}');
-    state.scores = Object.assign(state.scores, s);
-  }catch(e){}
-  try{
-    const l = localStorage.getItem('ttt_lang');
-    if(l === 'de' || l === 'en') state.lang = l;
-  }catch(e){}
-  try{
-    const t = localStorage.getItem('ttt_theme');
-    if(t === 'light' || t === 'dark') state.theme = t;
-  }catch(e){}
-}
-loadState();
-
-function saveScores(){ localStorage.setItem('ttt_scores', JSON.stringify(state.scores)); }
-function saveLang(){ localStorage.setItem('ttt_lang', state.lang); }
-function saveTheme(){ localStorage.setItem('ttt_theme', state.theme); }
-
-// Create board cells (persistent)
-function createBoard(){
-  boardEl.innerHTML = '';
-  for(let i=0;i<9;i++){
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    cell.setAttribute('role','button');
-    cell.setAttribute('aria-label', 'Cell ' + (i+1));
-    cell.tabIndex = 0;
-    cell.dataset.index = i;
-    const mark = document.createElement('div');
-    mark.className = 'mark';
-    mark.style.opacity = '0';
-    cell.appendChild(mark);
-    cell.addEventListener('click', onCellClick);
-    cell.addEventListener('keydown', (e)=>{ if(e.key==='Enter') onCellClick(e); });
-    boardEl.appendChild(cell);
-  }
-}
-createBoard();
-
-function applyLanguageTexts(){
-  const t = LANG[state.lang];
-  $('titleText').textContent = t.title;
-  $('leadText').textContent = t.lead;
-  $('playModeLabel').textContent = t.playMode;
-  $('tipText').textContent = t.tip;
-  $('scoreboardLabel').textContent = t.scoreboard;
-  $('scoreNote').textContent = t.scoreNote;
-  $('appearanceLabel').textContent = t.appearance;
-  $('appearanceNote').textContent = t.appearanceNote;
-  $('aboutLabel').textContent = t.about;
-  $('aboutText').textContent = t.aboutText;
-  $('builtFor').textContent = t.builtFor;
-  $('restartBtn').textContent = t.restart;
-  $('pvpBtn').textContent = t.pvp;
-  $('aiBtn').textContent = t.ai;
-  $('themeBtn').textContent = state.theme === 'dark' ? t.switchToLight : t.switchToDark;
-  $('resetScores').textContent = t.resetScores;
-  langBtn.textContent = t.langButton;
-  loadingText.textContent = t.loading;
-  // Update the localized "Turn:" label
-  turnText.textContent = t.turn;
-  renderScores();
-  render(); // update turn label and status text
-}
-
-function renderScores(){
-  const t = LANG[state.lang];
-  xScoreEl.textContent = `X ${state.scores.X}`;
-  oScoreEl.textContent = `O ${state.scores.O}`;
-  drawScoreEl.textContent = `${t.drawsLabel} ${state.scores.D}`;
-}
-
-// Render board marks (persistent)
-function render(){
-  const cells = boardEl.children;
-  for(let i=0;i<9;i++){
-    const val = state.board[i];
-    const el = cells[i];
-    const mark = el.querySelector('.mark');
-    if(!mark) continue;
-    if(!val){
-      if(mark.textContent){
-        mark.textContent = '';
-        mark.className = 'mark';
-        mark.style.opacity = '0';
-      }
-      el.classList.remove('dim');
-      continue;
-    }
-    if(mark.textContent === val){
-      mark.style.opacity = '1';
-      el.classList.add('dim');
-      continue;
-    }
-    mark.textContent = val;
-    mark.className = 'mark new ' + (val.toLowerCase());
-    mark.style.opacity = '1';
-    setTimeout(()=> {
-      if(mark.textContent === val) mark.classList.remove('new');
-    }, 320);
-    el.classList.add('dim');
-  }
-
-  const t = LANG[state.lang];
-  turnLabel.textContent = state.turn;
-  if(state.gameOver){
-    if(state.lastResult && state.lastResult.winner === 'D') {
-      status.textContent = t.draw;
-    } else if(state.lastResult && state.lastResult.winner) {
-      status.textContent = `${state.lastResult.winner} ${t.winsSuffix}`;
-    } else {
-      status.textContent = t.draw;
-    }
-  } else {
-    status.textContent = (state.mode==='ai' && state.turn===state.aiPlayer) ? t.aiThinking : t.yourMove;
-  }
-}
-
-// Win detection
-const wins = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
-];
-function checkWinner(board){
-  for(const w of wins){
-    const [a,b,c] = w;
-    if(board[a] && board[a] === board[b] && board[a] === board[c]) return { winner: board[a], line: w };
-  }
-  if(board.every(Boolean)) return { winner: 'D' };
-  return null;
-}
-
-// Audio & small UI helpers
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioCtx();
-function playTone(freq, type = 'sine', duration = 0.12, gain = 0.12) {
-  const now = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, now);
-  g.gain.setValueAtTime(gain, now);
-  o.connect(g);
-  g.connect(audioCtx.destination);
-  o.start(now);
-  o.stop(now + duration);
-}
-function playSound(name) {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  switch (name) {
-    case 'click': playTone(880, 'square', 0.06, 0.06); break;
-    case 'place': playTone(660, 'sine', 0.09, 0.09); break;
-    case 'win':   playTone(880, 'sine', 0.18, 0.14); playTone(1320, 'sine', 0.18, 0.08); break;
-    case 'lose':  playTone(220, 'sawtooth', 0.18, 0.12); playTone(330, 'triangle', 0.12, 0.06); break;
-    case 'draw':  playTone(440, 'triangle', 0.18, 0.08); break;
-    case 'error': playTone(220, 'sawtooth', 0.12, 0.12); break;
-    default:      playTone(660, 'sine', 0.08, 0.06);
-  }
-}
-
-// Toast root
-const toastRoot = document.createElement('div');
-toastRoot.id = 'toastRoot';
-toastRoot.style.position = 'fixed';
-toastRoot.style.right = '18px';
-toastRoot.style.top = '18px';
-toastRoot.style.zIndex = 9999;
-document.body.appendChild(toastRoot);
-function showToast(text, ms = 1400) {
-  const t = document.createElement('div');
-  t.textContent = text;
-  t.style.background = 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))';
-  t.style.color = 'var(--text)';
-  t.style.padding = '8px 12px';
-  t.style.borderRadius = '10px';
-  t.style.marginTop = '8px';
-  t.style.boxShadow = '0 8px 24px rgba(2,6,23,0.08)';
-  t.style.fontSize = '13px';
-  t.style.opacity = '0';
-  t.style.transform = 'translateY(-6px)';
-  t.style.transition = 'all 220ms ease';
-  toastRoot.appendChild(t);
-  requestAnimationFrame(()=>{ t.style.opacity='1'; t.style.transform='translateY(0)'; });
-  setTimeout(()=> {
-    t.style.opacity = '0'; t.style.transform = 'translateY(-6px)';
-    setTimeout(()=> toastRoot.removeChild(t), 260);
-  }, ms);
-}
-
-// Confetti & loss particles
-const confettiCanvas = document.createElement('canvas');
-confettiCanvas.style.position = 'fixed';
-confettiCanvas.style.left = '0';
-confettiCanvas.style.top = '0';
-confettiCanvas.style.pointerEvents = 'none';
-confettiCanvas.style.zIndex = 9998;
-document.body.appendChild(confettiCanvas);
-const cctx = confettiCanvas.getContext('2d');
-function resizeConfetti(){ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; }
-resizeConfetti(); window.addEventListener('resize', resizeConfetti);
-function confettiBurst(count=40){
-  const pieces = [];
-  for(let i=0;i<count;i++){
-    pieces.push({
-      x: innerWidth*0.5 + (Math.random()-0.5)*200,
-      y: innerHeight*0.35 + (Math.random()-0.5)*80,
-      vx: (Math.random()-0.5)*6,
-      vy: -(2 + Math.random()*6),
-      rot: Math.random()*Math.PI,
-      vr: (Math.random()-0.5)*0.3,
-      w: 6 + Math.random()*10,
-      h: 8 + Math.random()*10,
-      color: ['#7c5cff','#00d4ff','#ff6b6b','#4ee1a0'][Math.floor(Math.random()*4)]
-    });
-  }
-  let t0 = performance.now();
-  function step(now){
-    const dt = (now - t0)/1000; t0 = now;
-    cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
-    for(const p of pieces){
-      p.vy += 18*dt;
-      p.x += p.vx;
-      p.y += p.vy;
-      p.rot += p.vr;
-      cctx.save();
-      cctx.translate(p.x,p.y);
-      cctx.rotate(p.rot);
-      cctx.fillStyle = p.color;
-      cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
-      cctx.restore();
-    }
-    for(let i=pieces.length-1;i>=0;i--) if(pieces[i].y > innerHeight + 50) pieces.splice(i,1);
-    if(pieces.length) requestAnimationFrame(step);
-    else cctx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
-  }
-  requestAnimationFrame(step);
-}
-function spawnLossParticles(count=30){
-  for(let i=0;i<count;i++){
-    const p = document.createElement('div');
-    p.className = 'loss-particle';
-    const x = Math.random()*innerWidth;
-    p.style.left = `${x}px`;
-    p.style.top = `${-20 - Math.random()*80}px`;
-    p.style.width = `${6 + Math.random()*10}px`;
-    p.style.height = `${8 + Math.random()*14}px`;
-    p.style.opacity = `${0.6 + Math.random()*0.4}`;
-    p.style.transform = `rotate(${Math.random()*360}deg)`;
-    document.body.appendChild(p);
-    const vx = (Math.random()-0.5)*40;
-    let vy = 40 + Math.random()*120;
-    let rot = Math.random()*6;
-    const lifetime = 1200 + Math.random()*800;
-    const start = performance.now();
-    (function step(now){
-      const t = now - start;
-      const dt = 16/1000;
-      const top = parseFloat(p.style.top);
-      p.style.top = `${top + vy * dt}px`;
-      p.style.left = `${parseFloat(p.style.left) + vx * dt}px`;
-      p.style.transform = `rotate(${rot * (t/1000)}rad)`;
-      vy += 400 * dt;
-      if (t < lifetime) requestAnimationFrame(step);
-      else p.remove();
-    })(performance.now());
-  }
-}
-
-// Event hooks
-function onMovePlaced(){ playSound('place'); showToast(LANG[state.lang].yourMove,700); }
-function onButtonClick(name=''){ playSound('click'); if(name) showToast(name,700); }
-function onWin(winner){
-  playSound('win'); confettiBurst(60); showToast(`${winner} ${LANG[state.lang].winsSuffix}`,1600);
-}
-function onDraw(){ playSound('draw'); showToast(LANG[state.lang].draw,1200); }
-function onError(msg){ playSound('error'); showToast(msg || 'Action not allowed',1000); }
-
-function triggerLossEffect(){
-  playSound('lose');
-  $('lossOverlay').classList.add('loss-flash');
-  boardEl.classList.add('shake');
-  spawnLossParticles(36);
-  showToast(state.lang === 'de' ? 'Du hast verloren — KI gewinnt' : 'You lost — AI wins',1600);
-  boardEl.style.filter = 'grayscale(0.25) contrast(0.9)';
-  setTimeout(()=> $('lossOverlay').classList.remove('loss-flash'), 420);
-  setTimeout(()=> { boardEl.classList.remove('shake'); boardEl.style.filter = ''; }, 700);
-}
-
-// Game logic
-function applyMove(idx){
-  if(state.gameOver || state.board[idx]) { onError(state.lang === 'de' ? 'Ungültiger Zug' : 'Invalid move'); return false; }
-  state.history.push({ board: state.board.slice(), turn: state.turn });
-  state.board[idx] = state.turn;
-  onMovePlaced();
-
-  const res = checkWinner(state.board);
-  if(res){
-    state.gameOver = true;
-    state.lastResult = res;
-    if(res.winner === 'D'){
-      state.scores.D++;
-      status.textContent = LANG[state.lang].draw;
-      onDraw();
-    } else {
-      state.scores[res.winner]++;
-      highlightWin(res.line);
-      status.textContent = `${res.winner} ${LANG[state.lang].winsSuffix}`;
-      if(state.mode === 'ai' && res.winner === state.aiPlayer) triggerLossEffect();
-      else onWin(res.winner);
-    }
-    saveScores();
-  } else {
-    state.turn = state.turn === 'X' ? 'O' : 'X';
-    state.lastResult = null;
-  }
-  render();
-  return true;
-}
-
-function highlightWin(line){
-  if(!line) return;
-  for(const i of line){
-    const el = boardEl.children[i];
-    el.style.boxShadow = '0 8px 30px rgba(124,92,255,0.12) inset';
-    setTimeout(()=>el.style.boxShadow='', 1600);
-  }
-}
-
-// Cell click handler
-function onCellClick(e){
-  const idx = Number(e.currentTarget.dataset.index);
-  if(state.gameOver) { onError(state.lang === 'de' ? 'Spiel beendet' : 'Game over'); return; }
-  if(state.mode === 'ai' && state.turn === state.aiPlayer) { onError(state.lang === 'de' ? 'Warte auf die KI' : 'Wait for AI'); return; }
-  const moved = applyMove(idx);
-  if(moved && state.mode === 'ai' && !state.gameOver){
-    setTimeout(()=>{ aiMove(); }, 220);
-  }
-}
-
-// Restart
-function resetBoard(){
-  state.board = Array(9).fill(null);
-  state.turn = 'X';
-  state.history = [];
-  state.gameOver = false;
-  state.lastResult = null;
-  render();
-  onButtonClick(LANG[state.lang].restart);
-}
-
-// Mode switches
-function setPvP(){ state.mode='pvp'; state.aiPlayer='O'; resetBoard(); onButtonClick(LANG[state.lang].pvp); }
-function setPvAI(){ state.mode='ai'; state.aiPlayer='O'; resetBoard(); onButtonClick(LANG[state.lang].ai); }
-
-// Theme toggle
-function toggleTheme(){
-  const html = document.documentElement;
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  html.setAttribute('data-theme', state.theme);
-  saveTheme();
-  $('themeBtn').textContent = state.theme === 'dark' ? LANG[state.lang].switchToLight : LANG[state.lang].switchToDark;
-  onButtonClick('Theme: ' + state.theme);
-}
-
-// Language toggle with 2-second loading overlay
-let langSwitching = false;
-function toggleLanguage(){
-  if(langSwitching) return;
-  langSwitching = true;
-  const target = state.lang === 'en' ? 'de' : 'en';
-  loadingText.textContent = LANG[target].loading;
-  loadingOverlay.classList.add('show');
-  loadingOverlay.setAttribute('aria-hidden','false');
-  playSound('click');
-  setTimeout(()=> {
-    state.lang = target;
-    saveLang();
-    applyLanguageTexts();
-    loadingOverlay.classList.remove('show');
-    loadingOverlay.setAttribute('aria-hidden','true');
-    langSwitching = false;
-    showToast(state.lang === 'de' ? 'Sprache gewechselt' : 'Language switched', 1200);
-  }, 2000);
-}
-
-// Reset scores
-function resetScores(){
-  state.scores = { X:0, O:0, D:0 };
-  saveScores(); renderScores();
-  onButtonClick(LANG[state.lang].resetScores);
-}
-
-// Keyboard shortcuts
-window.addEventListener('keydown', (e)=>{
-  if(e.key === '1') uiAction(setPvP)();
-  if(e.key === '2') uiAction(setPvAI)();
-  if(e.key === 'r' || e.key === 'R') uiAction(resetBoard)();
-});
-
-// AI: minimax with a chance of a suboptimal move so it's beatable
-const AI_MISTAKE_CHANCE = 0.35; // probability the AI ignores the optimal move and plays randomly instead
-
-function aiMove(){
-  if(state.gameOver) return;
-  const avail = state.board.map((v,i)=>v?null:i).filter(v=>v!==null);
-  if(avail.length === 0) return;
-
-  // Occasionally "miss" the perfect move and play a random legal move instead
-  if(Math.random() < AI_MISTAKE_CHANCE){
-    const idx = avail[Math.floor(Math.random()*avail.length)];
-    applyMove(idx);
-    return;
-  }
-
-  const best = minimax(state.board.slice(), state.aiPlayer);
-  if(best && best.index !== undefined){
-    applyMove(best.index);
-  }
-}
-function minimax(board, player){
-  const avail = board.map((v,i)=>v?null:i).filter(v=>v!==null);
-  const winner = checkWinner(board);
-  if(winner){
-    if(winner.winner === state.aiPlayer) return { score: 10 };
-    if(winner.winner === 'D') return { score: 0 };
-    return { score: -10 };
-  }
-  const moves = [];
-  for(const i of avail){
-    const move = {}; move.index = i; board[i] = player;
-    const result = minimax(board, player === 'X' ? 'O' : 'X');
-    move.score = result.score; board[i] = null; moves.push(move);
-  }
-  let bestMove;
-  if(player === state.aiPlayer){
-    let bestScore = -Infinity; for(const m of moves) if(m.score > bestScore){ bestScore = m.score; bestMove = m; }
-  } else {
-    let bestScore = Infinity; for(const m of moves) if(m.score < bestScore){ bestScore = m.score; bestMove = m; }
-  }
-  return bestMove || { score: 0 };
-}
-
-// UI wrapper
-function uiAction(fn){
-  return (e) => {
-    playSound('click');
-    setTimeout(()=> fn(e), 60);
-  };
-}
-
-// Wire UI
-$('pvpBtn').addEventListener('click', uiAction(setPvP));
-$('aiBtn').addEventListener('click', uiAction(setPvAI));
-$('restartBtn').addEventListener('click', uiAction(resetBoard));
-$('themeBtn').addEventListener('click', uiAction(toggleTheme));
-langBtn.addEventListener('click', uiAction(toggleLanguage));
-$('resetScores').addEventListener('click', uiAction(resetScores));
-
-// ---- Desktop vs Mobile detection ----
-// Combines viewport width with touch/pointer capability so tablets in
-// portrait and small touch screens count as "mobile", while a narrow
-// desktop browser window with a mouse still gets the full layout.
-const mobileWidthQuery = window.matchMedia('(max-width: 820px)');
-const coarsePointerQuery = window.matchMedia('(pointer: coarse)');
-
-function computeIsMobile(){
-  const narrow = mobileWidthQuery.matches;
-  const touch = coarsePointerQuery.matches || navigator.maxTouchPoints > 0;
-  return narrow && touch || narrow && innerWidth <= 600;
-}
-
-function applyDeviceMode(){
-  const isMobile = computeIsMobile();
-  document.documentElement.setAttribute('data-device', isMobile ? 'mobile' : 'desktop');
-  if(!isMobile) closeSettingsDrawer(true);
-}
-
-const gearBtn = $('gearBtn');
-const drawerBackdrop = $('drawerBackdrop');
-const rightPanel = $('rightPanel');
-const drawerCloseBtn = $('drawerCloseBtn');
-
-function openSettingsDrawer(){
-  rightPanel.classList.add('open');
-  drawerBackdrop.classList.add('open');
-  gearBtn.setAttribute('aria-expanded','true');
-  playSound('click');
-}
-function closeSettingsDrawer(silent){
-  rightPanel.classList.remove('open');
-  drawerBackdrop.classList.remove('open');
-  gearBtn.setAttribute('aria-expanded','false');
-  if(!silent) playSound('click');
-}
-function toggleSettingsDrawer(){
-  if(rightPanel.classList.contains('open')) closeSettingsDrawer();
-  else openSettingsDrawer();
-}
-
-gearBtn.addEventListener('click', toggleSettingsDrawer);
-drawerBackdrop.addEventListener('click', ()=> closeSettingsDrawer());
-drawerCloseBtn.addEventListener('click', ()=> closeSettingsDrawer());
-window.addEventListener('keydown', (e)=>{
-  if(e.key === 'Escape' && rightPanel.classList.contains('open')) closeSettingsDrawer();
-});
-
-// Re-check on resize / orientation change / pointer type change
-window.addEventListener('resize', applyDeviceMode);
-if(mobileWidthQuery.addEventListener) mobileWidthQuery.addEventListener('change', applyDeviceMode);
-if(coarsePointerQuery.addEventListener) coarsePointerQuery.addEventListener('change', applyDeviceMode);
-
-// Close the drawer automatically once a mode is picked or the board is restarted on mobile
-const _setPvP = setPvP, _setPvAI = setPvAI;
-setPvP = function(){ _setPvP(); if(document.documentElement.getAttribute('data-device')==='mobile') closeSettingsDrawer(true); };
-setPvAI = function(){ _setPvAI(); if(document.documentElement.getAttribute('data-device')==='mobile') closeSettingsDrawer(true); };
-
-// Initialize visuals and texts
-(function init(){
-  document.documentElement.setAttribute('data-theme', state.theme);
-  applyDeviceMode();
-  applyLanguageTexts();
-  render();
-  if(boardEl.children[0]) boardEl.children[0].focus();
-})();
-</script>
 </body>
-</html>2
+</html>
