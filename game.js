@@ -379,9 +379,3 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") settingsMenu
 // ---------- INIT ----------
 loadSettings();
 applyLanguage(settings.lang);
-
-// small helper strings for status
-const STR = {
-    en: { localStatus: "Local mode: click a cell to play.", chooseRoom: "Choose a room option." },
-    de: { localStatus: "Lokal: Klicke ein Feld zum Spielen.", chooseRoom: "Wähle eine Raum‑Option." }
-};
