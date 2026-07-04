@@ -140,8 +140,11 @@ function applyLanguage(lang) {
     document.getElementById("playLocalBtn").textContent = s.playLocal;
     document.getElementById("playOnlineBtn").textContent = s.playOnline;
     document.getElementById("settingsBtn").textContent = s.settings;
-    document.getElementById("darkModeLabel")?.textContent = s.darkMode;
-    document.getElementById("animationsLabel")?.textContent = s.animations;
+    // optional labels (may not exist in older HTML)
+    const darkLabel = document.getElementById("darkModeLabel");
+    if (darkLabel) darkLabel.textContent = s.darkMode;
+    const animLabel = document.getElementById("animationsLabel");
+    if (animLabel) animLabel.textContent = s.animations;
     document.getElementById("createRoomBtn").textContent = s.createRoom;
     document.getElementById("joinRoomBtn").textContent = s.joinRoom;
     document.getElementById("randomBtn").textContent = s.randomMatch;
@@ -265,7 +268,16 @@ document.getElementById("createRoomBtn").onclick = async () => {
     currentRoom = code;
     roomRef = ref(db, "rooms/" + currentRoom);
     chatRef = ref(db, "rooms/" + currentRoom + "/chat");
-    await update(roomRef, { board:["","","","","","","","",""], turn:"X", X:false, O:false, winner:null });
+
+    // <-- FIXED: ensure valid object properties (no stray characters)
+    await update(roomRef, {
+        board: ["","","","","","","","",""],
+        turn: "X",
+        X: false,
+        O: false,
+        winner: null
+    });
+
     startOnlineRoom();
     alert((settings.lang==="de" ? "Raum erstellt: " : "Room created: ") + code);
 };
@@ -292,7 +304,13 @@ document.getElementById("randomBtn").onclick = async () => {
     }
     if (!foundRoom) {
         foundRoom = Math.floor(10000 + Math.random() * 90000).toString();
-        await update(ref(db, "rooms/" + foundRoom), { board:["","","","","","","","",""], turn:"X", X:false, O:false, winner:null });
+        await update(ref(db, "rooms/" + foundRoom), {
+            board:["","","","","","","","",""],
+            turn:"X",
+            X:false,
+            O:false,
+            winner:null
+        });
     }
     currentRoom = foundRoom;
     roomRef = ref(db, "rooms/" + currentRoom);
