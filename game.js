@@ -13,21 +13,152 @@ for (let i = 0; i < 9; i++) {
     cells.push(cell);
 }
 
-// ---------- PLAYER NAME ----------
-let playerName = "Player";
-document.getElementById("playerNameInput").addEventListener("input", e => {
-    playerName = e.target.value.trim() || "Player";
+// ---------- SETTINGS + PERSISTENCE ----------
+const pageRoot = document.getElementById("pageRoot");
+const settingsMenu = document.getElementById("settingsMenu");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const darkModeToggle = document.getElementById("darkModeToggle");
+const animationsToggle = document.getElementById("animationsToggle");
+const languageSelectUI = document.getElementById("languageSelectUI");
+const playerNameInput = document.getElementById("playerNameInput");
+
+const SETTINGS_KEY = "ttt_settings_v2";
+
+let settings = {
+    darkMode: true,
+    animations: true,
+    lang: "en",
+    playerName: "Player"
+};
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (raw) settings = Object.assign(settings, JSON.parse(raw));
+    } catch(e){}
+    applySettingsToUI();
+    applySettings();
+}
+
+function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e){}
+}
+
+function applySettingsToUI() {
+    darkModeToggle.checked = settings.darkMode;
+    animationsToggle.checked = settings.animations;
+    languageSelectUI.value = settings.lang;
+    playerNameInput.value = settings.playerName;
+    playerName = settings.playerName || "Player";
+}
+
+function applySettings() {
+    // dark mode
+    document.body.style.background = settings.darkMode ? "#0d0d0d" : "#f0f0f0";
+    // animations: toggle class and inline transitions for immediate effect
+    if (!settings.animations) {
+        pageRoot.classList.add("no-anim");
+        // remove transitions inline for existing elements to ensure immediate effect
+        document.querySelectorAll(".cell, .bigBtn, #settingsMenu, .xClose").forEach(el => {
+            el.style.transition = "none";
+        });
+    } else {
+        pageRoot.classList.remove("no-anim");
+        document.querySelectorAll(".cell, .bigBtn, #settingsMenu, .xClose").forEach(el => {
+            el.style.transition = "";
+        });
+    }
+    // language
+    applyLanguage(settings.lang);
+    // player name
+    playerName = settings.playerName || "Player";
+}
+
+// UI event handlers for settings
+darkModeToggle.addEventListener("change", () => {
+    settings.darkMode = darkModeToggle.checked;
+    saveSettings();
+    applySettings();
 });
+animationsToggle.addEventListener("change", () => {
+    settings.animations = animationsToggle.checked;
+    saveSettings();
+    applySettings();
+});
+languageSelectUI.addEventListener("change", () => {
+    settings.lang = languageSelectUI.value;
+    saveSettings();
+    applySettings();
+});
+playerNameInput.addEventListener("input", e => {
+    settings.playerName = e.target.value.trim() || "Player";
+    saveSettings();
+    playerName = settings.playerName;
+});
+
+// ---------- LANGUAGE STRINGS ----------
+const STR = {
+    en: {
+        title: "Tic Tac Toe",
+        playLocal: "Play Local",
+        playOnline: "Play Online",
+        settings: "Settings",
+        darkMode: "Dark Mode",
+        animations: "Animations",
+        createRoom: "Create Room",
+        joinRoom: "Join Room",
+        randomMatch: "Random Match",
+        localStatus: "Local mode: click a cell to play.",
+        chooseRoom: "Choose a room option.",
+        send: "Send",
+        placeholderName: "Your name...",
+        placeholderRoom: "Room code...",
+        placeholderChat: "Type message..."
+    },
+    de: {
+        title: "Tic Tac Toe",
+        playLocal: "Lokal spielen",
+        playOnline: "Online spielen",
+        settings: "Einstellungen",
+        darkMode: "Dunkler Modus",
+        animations: "Animationen",
+        createRoom: "Raum erstellen",
+        joinRoom: "Raum beitreten",
+        randomMatch: "Zufalls‑Match",
+        localStatus: "Lokal: Klicke ein Feld zum Spielen.",
+        chooseRoom: "Wähle eine Raum‑Option.",
+        send: "Senden",
+        placeholderName: "Dein Name...",
+        placeholderRoom: "Raumcode...",
+        placeholderChat: "Nachricht..."
+    }
+};
+
+function applyLanguage(lang) {
+    const s = STR[lang] || STR.en;
+    document.getElementById("titleText").textContent = s.title;
+    document.getElementById("playLocalBtn").textContent = s.playLocal;
+    document.getElementById("playOnlineBtn").textContent = s.playOnline;
+    document.getElementById("settingsBtn").textContent = s.settings;
+    document.getElementById("darkModeLabel")?.textContent = s.darkMode;
+    document.getElementById("animationsLabel")?.textContent = s.animations;
+    document.getElementById("createRoomBtn").textContent = s.createRoom;
+    document.getElementById("joinRoomBtn").textContent = s.joinRoom;
+    document.getElementById("randomBtn").textContent = s.randomMatch;
+    document.getElementById("sendBtn").textContent = s.send;
+    playerNameInput.placeholder = s.placeholderName;
+    document.getElementById("roomCodeInput").placeholder = s.placeholderRoom;
+    document.getElementById("chatInput").placeholder = s.placeholderChat;
+    statusText.textContent = settings.lang === "de" ? STR.de.localStatus : STR.en.localStatus;
+}
 
 // ---------- WIN ANIMATION ----------
 function showWinAnimation(winner) {
     const anim = document.getElementById("winAnimation");
-    anim.textContent = `${winner} wins!`;
+    const label = settings.lang === "de" ? `${winner} gewinnt!` : `${winner} wins!`;
+    anim.textContent = label;
     anim.style.display = "flex";
-
-    setTimeout(() => {
-        anim.style.display = "none";
-    }, 2500);
+    setTimeout(() => { anim.style.display = "none"; }, 2500);
 }
 
 // ---------- LOCAL GAME LOGIC ----------
@@ -37,20 +168,11 @@ function checkWin() {
         [0,3,6],[1,4,7],[2,5,8],
         [0,4,8],[2,4,6]
     ];
-
-    // clear previous win classes
     cells.forEach(c => c.classList.remove("win"));
-
     for (const pattern of winPatterns) {
         const [a,b,c] = pattern;
-        if (
-            cells[a].textContent &&
-            cells[a].textContent === cells[b].textContent &&
-            cells[a].textContent === cells[c].textContent
-        ) {
-            cells[a].classList.add("win");
-            cells[b].classList.add("win");
-            cells[c].classList.add("win");
+        if (cells[a].textContent && cells[a].textContent === cells[b].textContent && cells[a].textContent === cells[c].textContent) {
+            cells[a].classList.add("win"); cells[b].classList.add("win"); cells[c].classList.add("win");
             return cells[a].textContent;
         }
     }
@@ -60,19 +182,16 @@ function checkWin() {
 function localMove(cell) {
     if (!gameActive) return;
     if (cell.textContent !== "") return;
-
     cell.textContent = localTurn;
     const winner = checkWin();
-
     if (winner) {
         statusText.textContent = `${winner} wins! (local)`;
         showWinAnimation(winner);
         gameActive = false;
         return;
     }
-
     localTurn = localTurn === "X" ? "O" : "X";
-    statusText.textContent = `Local mode — Turn: ${localTurn}`;
+    statusText.textContent = settings.lang === "de" ? STR.de.localStatus : STR.en.localStatus;
 }
 
 // ---------- FIREBASE SETUP ----------
@@ -97,41 +216,27 @@ let roomRef = null;
 let chatRef = null;
 let mySymbol = null;
 let online = false;
+let playerName = settings.playerName || "Player";
 
 // ---------- START ONLINE ROOM ----------
 function startOnlineRoom() {
     online = true;
     statusText.textContent = `Online — Room: ${currentRoom}`;
     gameActive = true;
-    cells.forEach(c => {
-        c.textContent = "";
-        c.classList.remove("win");
-    });
+    cells.forEach(c => { c.textContent = ""; c.classList.remove("win"); });
 
     onValue(roomRef, snapshot => {
         const data = snapshot.val();
         if (!data) return;
 
         if (!mySymbol) {
-            if (!data.X) {
-                update(roomRef, { X: true });
-                mySymbol = "X";
-            } else if (!data.O) {
-                update(roomRef, { O: true });
-                mySymbol = "O";
-            }
+            if (!data.X) { update(roomRef, { X: true }); mySymbol = "X"; }
+            else if (!data.O) { update(roomRef, { O: true }); mySymbol = "O"; }
         }
 
-        if (data.board) {
-            data.board.forEach((val, i) => {
-                cells[i].textContent = val;
-            });
-        }
+        if (data.board) data.board.forEach((val,i)=> cells[i].textContent = val || "");
 
-        if (data.turn) {
-            localTurn = data.turn;
-            statusText.textContent = `Online — Turn: ${localTurn}`;
-        }
+        if (data.turn) { localTurn = data.turn; statusText.textContent = `Online — Turn: ${localTurn}`; }
 
         if (data.winner) {
             showWinAnimation(data.winner);
@@ -144,15 +249,12 @@ function startOnlineRoom() {
         const data = snapshot.val();
         const messagesDiv = document.getElementById("messages");
         messagesDiv.innerHTML = "";
-
         if (!data) return;
-
         Object.values(data).forEach(msg => {
             const p = document.createElement("p");
             p.textContent = msg;
             messagesDiv.appendChild(p);
         });
-
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     });
 }
@@ -161,31 +263,20 @@ function startOnlineRoom() {
 document.getElementById("createRoomBtn").onclick = async () => {
     const code = Math.floor(10000 + Math.random() * 90000).toString();
     currentRoom = code;
-
     roomRef = ref(db, "rooms/" + currentRoom);
     chatRef = ref(db, "rooms/" + currentRoom + "/chat");
-
-    await update(roomRef, {
-        board: ["","","","","","","","",""],
-        turn: "X",
-        X: false,
-        O: false,
-        winner: null
-    });
-
+    await update(roomRef, { board:["","","","","","","","",""], turn:"X", X:false, O:false, winner:null });
     startOnlineRoom();
-    alert("Room created: " + code);
+    alert((settings.lang==="de" ? "Raum erstellt: " : "Room created: ") + code);
 };
 
 // ---------- PRIVATE ROOM: JOIN ----------
 document.getElementById("joinRoomBtn").onclick = () => {
     const code = document.getElementById("roomCodeInput").value.trim();
-    if (!code) return alert("Enter a room code!");
-
+    if (!code) return alert(settings.lang==="de" ? "Gib einen Raumcode ein!" : "Enter a room code!");
     currentRoom = code;
     roomRef = ref(db, "rooms/" + currentRoom);
     chatRef = ref(db, "rooms/" + currentRoom + "/chat");
-
     startOnlineRoom();
 };
 
@@ -193,33 +284,19 @@ document.getElementById("joinRoomBtn").onclick = () => {
 document.getElementById("randomBtn").onclick = async () => {
     const roomsSnapshot = await get(ref(db, "rooms"));
     const rooms = roomsSnapshot.val() || {};
-
     let foundRoom = null;
-
     for (const code in rooms) {
         const r = rooms[code];
         const players = (r.X ? 1 : 0) + (r.O ? 1 : 0);
-        if (players < 2) {
-            foundRoom = code;
-            break;
-        }
+        if (players < 2) { foundRoom = code; break; }
     }
-
     if (!foundRoom) {
         foundRoom = Math.floor(10000 + Math.random() * 90000).toString();
-        await update(ref(db, "rooms/" + foundRoom), {
-            board: ["","","","","","","","",""],
-            turn: "X",
-            X: false,
-            O: false,
-            winner: null
-        });
+        await update(ref(db, "rooms/" + foundRoom), { board:["","","","","","","","",""], turn:"X", X:false, O:false, winner:null });
     }
-
     currentRoom = foundRoom;
     roomRef = ref(db, "rooms/" + currentRoom);
     chatRef = ref(db, "rooms/" + currentRoom + "/chat");
-
     startOnlineRoom();
 };
 
@@ -231,17 +308,11 @@ function onlineMove(cell) {
     if (cell.textContent !== "") return;
 
     const index = cell.dataset.index;
-
     const newBoard = cells.map(c => c.textContent);
     newBoard[index] = mySymbol;
-
     const winner = checkWin();
 
-    update(roomRef, {
-        board: newBoard,
-        turn: mySymbol === "X" ? "O" : "X",
-        winner: winner || null
-    });
+    update(roomRef, { board: newBoard, turn: mySymbol === "X" ? "O" : "X", winner: winner || null });
 
     if (winner) {
         showWinAnimation(winner);
@@ -252,73 +323,47 @@ function onlineMove(cell) {
 // ---------- CHAT ----------
 document.getElementById("sendBtn").onclick = () => {
     if (!online) return;
-
     const input = document.getElementById("chatInput");
     const text = input.value.trim();
     if (text === "") return;
-
     const msgId = Date.now();
-
-    update(chatRef, {
-        [msgId]: `${playerName} (${mySymbol || "?"}): ${text}`
-    });
-
+    update(chatRef, { [msgId]: `${playerName} (${mySymbol || "?"}): ${text}` });
     input.value = "";
 };
-
-document.getElementById("chatInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        document.getElementById("sendBtn").click();
-    }
-});
+document.getElementById("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("sendBtn").click(); });
 
 // ---------- CELL CLICKS ----------
-cells.forEach(cell => {
-    cell.onclick = () => {
-        if (online) onlineMove(cell);
-        else localMove(cell);
-    };
-});
+cells.forEach(cell => { cell.onclick = () => { if (online) onlineMove(cell); else localMove(cell); }; });
 
 // ---------- LOBBY + SETTINGS UI ----------
 const lobby = document.getElementById("lobby");
 const gameScreen = document.getElementById("gameScreen");
-const settingsMenu = document.getElementById("settingsMenu");
 
 document.getElementById("playLocalBtn").onclick = () => {
     lobby.style.display = "none";
     gameScreen.style.display = "block";
     online = false;
     gameActive = true;
-    cells.forEach(c => {
-        c.textContent = "";
-        c.classList.remove("win");
-    });
-    statusText.textContent = "Local mode: click a cell to play.";
+    cells.forEach(c => { c.textContent = ""; c.classList.remove("win"); });
+    statusText.textContent = settings.lang === "de" ? STR.de.localStatus : STR.en.localStatus;
 };
 
 document.getElementById("playOnlineBtn").onclick = () => {
     lobby.style.display = "none";
     gameScreen.style.display = "block";
-    statusText.textContent = "Choose a room option.";
+    statusText.textContent = settings.lang === "de" ? STR.de.chooseRoom : STR.en.chooseRoom;
 };
 
-document.getElementById("settingsBtn").onclick = () => {
-    settingsMenu.style.display = "block";
-};
+document.getElementById("settingsBtn").onclick = () => { settingsMenu.style.display = "block"; };
+closeSettingsBtn.addEventListener("click", () => { settingsMenu.style.display = "none"; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") settingsMenu.style.display = "none"; });
 
-document.getElementById("closeSettingsBtn").onclick = () => {
-    settingsMenu.style.display = "none";
-};
+// ---------- INIT ----------
+loadSettings();
+applyLanguage(settings.lang);
 
-document.getElementById("darkModeToggle").onclick = () => {
-    document.body.style.background =
-        document.getElementById("darkModeToggle").checked ? "#000" : "#0d0d0d";
-};
-
-document.getElementById("animationsToggle").onclick = () => {
-    const enabled = document.getElementById("animationsToggle").checked;
-    document.querySelectorAll(".cell").forEach(c => {
-        c.style.transition = enabled ? "transform 0.2s, background 0.2s" : "none";
-    });
+// small helper strings for status
+const STR = {
+    en: { localStatus: "Local mode: click a cell to play.", chooseRoom: "Choose a room option." },
+    de: { localStatus: "Lokal: Klicke ein Feld zum Spielen.", chooseRoom: "Wähle eine Raum‑Option." }
 };
