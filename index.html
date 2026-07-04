@@ -5,244 +5,150 @@
 <title>Tic Tac Toe Online</title>
 
 <style>
+    :root{
+        --bg:#0d0d0d;
+        --panel:#111;
+        --accent:#0a84ff;
+        --accent2:#00cc44;
+        --muted:#444;
+        --text:#fff;
+    }
+
     body {
         font-family: Arial, sans-serif;
-        background: #0d0d0d;
-        color: white;
+        background: var(--bg);
+        color: var(--text);
         margin: 0;
         padding: 0;
         overflow-x: hidden;
     }
 
-    .fade {
-        animation: fadeIn 0.5s ease forwards;
-        opacity: 0;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    .fade { animation: fadeIn 0.35s ease forwards; opacity:0; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
 
-    #lobby {
-        text-align: center;
-        padding-top: 60px;
-        display: block;
+    /* Lobby */
+    #lobby { text-align:center; padding-top:48px; display:block; }
+    #lobby h1 { font-size:48px; margin-bottom:14px; }
+    .bigBtn {
+        padding:12px 26px; font-size:18px; border:none; border-radius:6px;
+        cursor:pointer; margin:8px; transition:transform .12s;
     }
-
-    #lobby h1 {
-        font-size: 50px;
-        margin-bottom: 20px;
-    }
-
-    #lobby button {
-        padding: 15px 30px;
-        font-size: 20px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 10px;
-        transition: 0.2s;
-    }
-
-    #playLocalBtn { background: #444; color: white; }
-    #playOnlineBtn { background: #0a84ff; color: white; }
-    #settingsBtn { background: #00cc44; color: white; }
-
-    #lobby button:hover {
-        transform: scale(1.05);
-    }
+    .bigBtn:hover{ transform:scale(1.04); }
+    #playLocalBtn{ background:var(--muted); color:var(--text); }
+    #playOnlineBtn{ background:var(--accent); color:white; }
+    #settingsBtn{ background:var(--accent2); color:white; }
 
     #playerNameInput {
-        padding: 10px;
-        border-radius: 10px;
-        border: none;
-        width: 200px;
-        margin-top: 20px;
+        padding:10px; border-radius:8px; border:none; width:220px; margin-top:18px;
     }
 
-    #gameScreen {
-        display: none;
-        text-align: center;
-        padding-top: 20px;
-    }
+    /* Game screen */
+    #gameScreen { display:none; text-align:center; padding-top:18px; }
+
+    #roomUI { margin-top:14px; }
+    #roomUI input { padding:8px; border-radius:8px; border:none; width:150px; }
+    #roomUI button { padding:8px 14px; border-radius:8px; border:none; cursor:pointer; margin:6px; }
+    #createRoomBtn, #joinRoomBtn { background:var(--accent); color:white; }
+    #randomBtn { background:var(--accent2); color:white; }
+
+    #status { margin-top:18px; font-size:20px; }
 
     #board {
-        display: grid;
-        grid-template-columns: repeat(3, 100px);
-        grid-template-rows: repeat(3, 100px);
-        gap: 5px;
-        justify-content: center;
-        margin-top: 30px;
+        display:grid; grid-template-columns:repeat(3,100px); grid-template-rows:repeat(3,100px);
+        gap:6px; justify-content:center; margin:20px auto 0;
     }
 
     .cell {
-        width: 100px;
-        height: 100px;
-        background: #222;
-        font-size: 60px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        border-radius: 10px;
-        transition: transform 0.2s, background 0.2s;
+        width:100px; height:100px; background:#222; font-size:56px;
+        display:flex; justify-content:center; align-items:center; cursor:pointer;
+        border-radius:8px; transition: transform .2s, background .2s;
+        user-select:none;
+    }
+    .cell:hover{ background:#333; transform:scale(1.04); }
+    .cell.win{ background: #00cc44 !important; transform:scale(1.18); }
+
+    /* Chat */
+    #chatBox{ margin-top:18px; }
+    #messages{
+        width:320px; max-width:90vw; height:200px; background:#222; margin:auto;
+        padding:10px; overflow-y:auto; border-radius:8px; text-align:left;
+    }
+    #chatInput{ margin-top:10px; width:220px; padding:10px; border-radius:8px; border:none; }
+    #sendBtn{ padding:10px 18px; margin-left:8px; border-radius:8px; border:none; background:var(--accent); color:white; cursor:pointer; }
+
+    /* Settings modal */
+    #settingsMenu{
+        display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+        background:var(--panel); padding:18px; border-radius:12px; width:320px; z-index:50;
+        box-shadow:0 8px 30px rgba(0,0,0,.6);
+    }
+    #settingsMenu h2{ margin:0 0 12px 0; font-size:20px; }
+    .settingRow{ display:flex; align-items:center; justify-content:space-between; margin:8px 0; }
+    .settingRow label{ display:flex; align-items:center; gap:8px; font-size:15px; }
+    .xClose {
+        position:absolute; top:8px; right:10px; background:#333; color:white; border:none;
+        width:30px; height:30px; border-radius:4px; cursor:pointer; font-size:18px;
     }
 
-    .cell:hover {
-        background: #333;
-        transform: scale(1.05);
+    /* Win overlay */
+    #winAnimation{
+        display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.82); color:white; font-size:56px; justify-content:center;
+        align-items:center; z-index:999; display:flex;
     }
 
-    .cell.win {
-        background: #00cc44 !important;
-        transform: scale(1.2);
+    /* No animations class */
+    .no-anim .cell, .no-anim .bigBtn, .no-anim #settingsMenu, .no-anim .xClose {
+        transition: none !important;
     }
 
-    #status {
-        margin-top: 20px;
-        font-size: 24px;
-    }
-
-    #roomUI {
-        margin-top: 20px;
-    }
-
-    #roomUI input {
-        padding: 10px;
-        border-radius: 10px;
-        border: none;
-        width: 150px;
-    }
-
-    #roomUI button {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        margin: 5px;
-        transition: 0.2s;
-    }
-
-    #createRoomBtn,
-    #joinRoomBtn {
-        background: #0a84ff;
-        color: white;
-    }
-
-    #randomBtn {
-        background: #00cc44;
-        color: white;
-    }
-
-    #roomUI button:hover {
-        transform: scale(1.05);
-    }
-
-    #chatBox {
-        margin-top: 30px;
-    }
-
-    #messages {
-        width: 300px;
-        height: 200px;
-        background: #222;
-        margin: auto;
-        padding: 10px;
-        overflow-y: auto;
-        border-radius: 10px;
-        text-align: left;
-    }
-
-    #chatInput {
-        margin-top: 10px;
-        width: 200px;
-        padding: 10px;
-        border-radius: 10px;
-        border: none;
-    }
-
-    #sendBtn {
-        padding: 10px 20px;
-        margin-left: 10px;
-        border: none;
-        border-radius: 10px;
-        background: #0a84ff;
-        color: white;
-        cursor: pointer;
-    }
-
-    #settingsMenu {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #111;
-        padding: 20px;
-        border-radius: 15px;
-        width: 300px;
-        text-align: center;
-        animation: fadeIn 0.3s ease forwards;
-    }
-
-    #settingsMenu h2 {
-        margin-bottom: 20px;
-    }
-
-    #settingsMenu button {
-        margin-top: 20px;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 10px;
-        background: #444;
-        color: white;
-        cursor: pointer;
-    }
-
-    #winAnimation {
-        display:none;
-        position:fixed;
-        top:0;
-        left:0;
-        width:100%;
-        height:100%;
-        background:rgba(0,0,0,0.8);
-        color:white;
-        font-size:60px;
-        justify-content:center;
-        align-items:center;
-        z-index:999;
+    /* responsive */
+    @media (max-width:420px){
+        #board { grid-template-columns:repeat(3,80px); grid-template-rows:repeat(3,80px); gap:6px; }
+        .cell { width:80px; height:80px; font-size:44px; border-radius:6px; }
+        #messages { width:90vw; }
     }
 </style>
 </head>
 
-<body>
+<body id="pageRoot">
 
+<!-- LOBBY -->
 <div id="lobby" class="fade">
-    <h1>Tic Tac Toe</h1>
-    <button id="playLocalBtn">Play Local</button>
-    <button id="playOnlineBtn">Play Online</button>
-    <button id="settingsBtn">Settings</button>
-
+    <h1 id="titleText">Tic Tac Toe</h1>
+    <button id="playLocalBtn" class="bigBtn">Play Local</button>
+    <button id="playOnlineBtn" class="bigBtn">Play Online</button>
+    <button id="settingsBtn" class="bigBtn">Settings</button>
     <br>
     <input id="playerNameInput" placeholder="Your name...">
 </div>
 
-<div id="settingsMenu">
-    <h2>Settings</h2>
-    <label>
-        <input type="checkbox" id="darkModeToggle">
-        Dark Mode
-    </label><br><br>
+<!-- SETTINGS -->
+<div id="settingsMenu" role="dialog" aria-modal="true">
+    <button class="xClose" id="closeSettingsBtn" title="Close">✕</button>
+    <h2 id="settingsTitle">Settings</h2>
 
-    <label>
-        <input type="checkbox" id="animationsToggle" checked>
-        Animations
-    </label>
+    <div class="settingRow">
+        <label for="languageSelectUI">Language</label>
+        <select id="languageSelectUI" aria-label="Language">
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+        </select>
+    </div>
 
-    <button id="closeSettingsBtn">Close</button>
+    <div class="settingRow">
+        <label><input type="checkbox" id="darkModeToggle"> <span id="darkModeLabel">Dark Mode</span></label>
+        <span></span>
+    </div>
+
+    <div class="settingRow">
+        <label><input type="checkbox" id="animationsToggle" checked> <span id="animationsLabel">Animations</span></label>
+        <span></span>
+    </div>
+
 </div>
 
+<!-- GAME SCREEN -->
 <div id="gameScreen" class="fade">
 
     <div id="roomUI">
@@ -264,9 +170,9 @@
 
 </div>
 
-<div id="winAnimation"></div>
+<!-- WIN OVERLAY -->
+<div id="winAnimation" aria-hidden="true"></div>
 
 <script src="game.js" type="module"></script>
-
 </body>
 </html>
